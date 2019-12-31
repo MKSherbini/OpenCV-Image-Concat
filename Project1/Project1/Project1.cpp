@@ -19,6 +19,8 @@ int main(int argc, char** argv)
 {
 	cv::String loadQuery = "";
 	cv::String outputForm = "";
+	vector<cv::String> loadExts;
+
 	HRESULT hr = CoInitialize(NULL);
 	if (SUCCEEDED(hr)) {
 		try {
@@ -37,7 +39,7 @@ int main(int argc, char** argv)
 
 				xmlDoc->setProperty("SelectionLanguage", "XPath");
 				MSXML2::IXMLDOMNodePtr path = xmlDoc->selectSingleNode("/Configs/InputPath");
-				MSXML2::IXMLDOMNodePtr ext = xmlDoc->selectSingleNode("/Configs/InputExtension");
+				MSXML2::IXMLDOMNodeListPtr extensions = xmlDoc->selectNodes("/Configs/InputExtensions/*");
 
 
 				outputForm = (char*)xmlDoc->selectSingleNode("/Configs/OutputPath")->Gettext();
@@ -48,9 +50,15 @@ int main(int argc, char** argv)
 
 				//printf("Reading From %s\n", (char*)path->Gettext());
 				loadQuery = (char*)path->Gettext();
-				String sExt = (char*)ext->Gettext();
-				printf("Reading All Images From %s With Extention %s\n", loadQuery.c_str(), sExt.c_str());
-				loadQuery += "/*." + sExt;
+				printf("Reading All Images From %s With Extentions: ", loadQuery.c_str());
+				for (size_t i = 0; i < extensions->length; i++)
+				{
+					String sExt = (char*)extensions->item[i]->Gettext();
+					cout << sExt << " ";
+					loadExts.push_back(sExt);
+				}
+				cout << endl;
+				//loadQuery += "/*." + sExt;
 			}
 		}
 		catch (_com_error & e) {
@@ -70,7 +78,14 @@ int main(int argc, char** argv)
 	//}
 
 	vector<cv::String> fn;
-	glob(loadQuery, fn, false);
+	for (size_t i = 0; i < loadExts.size(); i++)
+	{
+		vector<cv::String> t;
+		glob(loadQuery + "/*." + loadExts[i], t, false);
+		fn.insert(fn.end(), t.begin(), t.end());
+	}
+
+	sort(fn.begin(), fn.end());
 
 	if (!fn.size()) {
 		cout << "Failed to find any image" << endl;
@@ -93,14 +108,16 @@ int main(int argc, char** argv)
 	int totWidth = 0, totHeight = 0;
 	vector<Mat> images;
 	size_t count = fn.size(); //number of png files in images folder
+
 	images.push_back(imread(fn[0]));
+
 	for (size_t i = 1; i < count; i++) {
 		//Mat tmp(images[0].clone());
 		Mat tmp = imread(fn[i]);
 
 		//resize(imread(fn[i]), tmp, tmp.size(), 0, 0, 1);
 
-		resize(tmp, tmp, cv::Size(images[0].size().width, tmp.size().height), 0, 0, 1);
+		resize(tmp, tmp, cv::Size(images[0].size().width, tmp.size().height * images[0].size().width / tmp.size().width), 0, 0, 1);
 		images.push_back(tmp);
 	}
 
