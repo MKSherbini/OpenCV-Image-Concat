@@ -95,10 +95,12 @@ int main(int argc, char** argv)
 	size_t count = fn.size(); //number of png files in images folder
 	images.push_back(imread(fn[0]));
 	for (size_t i = 1; i < count; i++) {
-		Mat tmp(images[0].clone());
+		//Mat tmp(images[0].clone());
+		Mat tmp = imread(fn[i]);
 
-		resize(imread(fn[i]), tmp, tmp.size(), 0, 0, 1);
+		//resize(imread(fn[i]), tmp, tmp.size(), 0, 0, 1);
 
+		resize(tmp, tmp, cv::Size(images[0].size().width, tmp.size().height), 0, 0, 1);
 		images.push_back(tmp);
 	}
 
